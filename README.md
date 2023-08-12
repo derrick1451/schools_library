@@ -71,7 +71,7 @@ Clone this repository to your desired folder:
 
 ```sh
   cd my-folder
-  git clone git@github.com:derrick1451/oop-school-library.git
+  git clone git@github.com:derrick1451/schools_library.git
 ```
 
 ### Install
@@ -131,7 +131,7 @@ To run tests, run the following command:
 
 Contributions, issues, and feature requests are welcome!
 
-Feel free to check the [issues page](https://github.com/derrick1451/oop-school-library/issues).
+Feel free to check the [issues page](https://github.com/derrick1451/schools_library/issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

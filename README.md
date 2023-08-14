@@ -113,6 +113,11 @@ To run tests, run the following command:
 - Twitter: [@derrickhayle](https://twitter.com/derrickhayle)
 - LinkedIn: [okongo-derrick](https://linkedin.com/in/okongo-derrick)
 
+👤 **Kagiso Sebogodi**s
+
+- GitHub: [@derrick](https://github.com/kayjee)
+- LinkedIn: [okongo-derrick](https://linkedin.com/in/kagiso-sebogodi)
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- FUTURE FEATURES -->

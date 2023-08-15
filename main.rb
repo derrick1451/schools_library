@@ -1,8 +1,7 @@
-require './app'
+require_relative 'app'
 
 def display_menu
-  puts ' '
-  puts 'Please select an option (number only)'
+  puts "\nPlease select an option (number only)"
   puts '[1] List all books'
   puts '[2] List all people'
   puts '[3] Create a person'
@@ -14,12 +13,12 @@ end
 
 def handle_option(option, app)
   option_actions = {
-    1 => -> { app.list_all_books },
-    2 => -> { app.list_all_people },
-    3 => -> { app.create_person },
-    4 => -> { app.create_book },
-    5 => -> { app.create_rental },
-    6 => -> { app.list_all_rentals },
+    1 => app.method(:list_all_books),
+    2 => app.method(:list_all_people),
+    3 => app.method(:create_person),
+    4 => app.method(:create_book),
+    5 => app.method(:create_rental),
+    6 => app.method(:list_all_rentals),
     7 => -> { puts 'Exiting' },
     default: -> { puts 'Enter a number between 1 and 7.' }
   }
@@ -30,12 +29,12 @@ end
 
 def main
   app = App.new
-  @option = 0
+  option = 0
 
-  until @option == 7
+  until option == 7
     display_menu
-    @option = gets.chomp.to_i
-    handle_option(@option, app)
+    option = gets.chomp.to_i
+    handle_option(option, app)
   end
 end
 

@@ -12,4 +12,14 @@ class Student < Person
   end
 
   attr_accessor :classroom
+  
+  def to_hash
+    {
+      class: 'Student',
+      id: @id,
+      name: @name,
+      age: @age,
+      parent_permission: @parent_permission
+    }
+  end
 end

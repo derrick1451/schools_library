@@ -1,4 +1,4 @@
-module DataIO  # Use a different name, such as DataIO
+module DataIO  # Use a different name, such as DataIO HERE
   class << self
     def save_data_to_file(data, file_path)
       File.open(file_path, 'w') do |file|

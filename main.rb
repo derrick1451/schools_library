@@ -1,4 +1,5 @@
 require_relative 'app'
+require "app"
 
 def display_menu
   puts "\nPlease select an option (number only)"

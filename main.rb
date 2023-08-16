@@ -30,12 +30,15 @@ end
 def main
   app = App.new
   option = 0
-
+  
   until option == 7
     display_menu
+    app.load_data_from_json
     option = gets.chomp.to_i
     handle_option(option, app)
   end
+  app.save_data_to_json
 end
+
 
 main

@@ -1,32 +1,57 @@
-require 'json'
-require './student'
-require './teacher'
-require './rental'
-require './book'
-require './classroom'
+require_relative 'book'
+require_relative 'person'
+require_relative 'rental'
+require_relative 'student'
+require_relative 'teacher'
+require_relative 'data/data_manager'
+require_relative 'data/data_handler'
 
 class App
-  attr_reader :books, :people, :rentals
+  RENTALS_JSON_FILE = 'data/rentals.json'.freeze
 
   def initialize
-    @books = []
-    @people = []
-    @rentals = []
+    @books = Book.load_books_from_json
+
+    data_manager = DataManager.new
+    @data_handler = DataHandler.new(data_manager, RENTALS_JSON_FILE)
   end
 
-  def list_all_books
-    return puts '0 Books currently available' if @books.empty?
+  def load_data
+    @people = @data_handler.load_people_from_json
+    @data_handler.load_rentals_from_json(@people, @books)
+  end
 
-    @books.each_with_index do |book, index|
-      puts "#{index + 1}. Title: #{book.title} by Author: #{book.author}"
+  def display_menu
+    puts "\nOptions:"
+    puts '1. List all books'
+    puts '2. List all people'
+    puts '3. Create a person'
+    puts '4. Create a book'
+    puts '5. Create a rental'
+    puts '6. List all rentals for a given person id'
+    puts '7. Quit'
+    print 'Enter the option number: '
+  end
+
+  def list_books
+    if @books.empty?
+      puts 'No books available.'
+    else
+      puts "\nList of Books:"
+      @books.each_with_index do |book, index|
+        puts "#{index}. Title: \"#{book.title}\", Author: #{book.author}"
+      end
     end
   end
 
-  def list_all_people
-    return puts 'No people Registered' if @people.empty?
-
-    @people.each_with_index do |person, index|
-      puts "#{index + 1}. [#{person.class}], id: #{person.id}, Name: #{person.name}, Age: #{person.age}"
+  def list_people
+    if @people.empty?
+      puts 'No people available.'
+    else
+      puts "\nList of People:"
+      @people.each_with_index do |person, index|
+        puts "#{index}. [#{person.class.name}] Name: #{person.name}, ID: #{person.id}, Age: #{person.age}"
+      end
     end
   end
 
@@ -43,203 +68,182 @@ class App
         create_teacher
         break
       else
-        puts 'Invalid input. Please choose 1 for student or 2 for teacher.'
+        puts 'Invalid input.Please Choose 1 for student 2 for teacher.'
       end
     end
   end
+
   def create_student
-    puts 'Enter Student Age: '
+    print "Enter the student's age: "
     age = gets.chomp.to_i
 
-    until age.positive?
-      puts 'Please Enter a valid age: '
-      age = gets.chomp.to_i
-    end
-
-    puts 'Enter Student Name: '
+    print "Enter the student's name: "
     name = gets.chomp
 
-    puts 'Does Student have parent permission to attend events? [Y/N]'
-    permission = gets.chomp.upcase
+    print 'Has parent permission? [Y/N]: '
+    parent_permission_input = gets.chomp.downcase
+    parent_permission = %w[y yes].include?(parent_permission_input)
 
-    until %w[Y N].include?(permission)
-      puts 'Invalid Input. Please enter Y or N: '
-      permission = gets.chomp.upcase
-    end
-    parent_permission = permission == 'Y'
-
-    student = Student.new(age, Classroom.new, name, parent_permission: parent_permission)
+    student = Student.new(name: name, age: age, parent_permission: parent_permission)
     @people << student
-    puts 'Student created successfully'
-  rescue StandardError => e
-    puts "An error occured: #{e.message}"
+
+    puts "Student created successfully! (ID: #{student.id})"
   end
 
   def create_teacher
-    puts 'Enter teacher name: '
+    print "Enter the teacher's age: "
+    age = gets.chomp.to_i
+
+    print "Enter the teacher's name: "
     name = gets.chomp
 
-    puts 'Enter teacher Age:'
-    age = gets.chomp.to_i
-    until age.positive?
-      puts 'Please Enter a Valid Age: > 0'
-      age = gets.chomp.to_i
-    end
-
-    puts 'Enter field of specialization'
+    print "Enter the teacher's specialization: "
     specialization = gets.chomp
 
-    teacher = Teacher.new(age, specialization, name)
+    teacher = Teacher.new(specialization: specialization, name: name, age: age)
     @people << teacher
 
-    puts 'Teacher created Successfully'
+    puts "Teacher created successfully! (ID: #{teacher.id})"
   end
+
   def create_book
-    puts 'Title: '
+    print "Enter the book's title: "
     title = gets.chomp
-
-    until title.strip != ''
-      puts 'Title cannot be empty. Please enter a valid title: '
-      title = gets.chomp
-    end
-
-    puts 'Enter the Author name: '
+    print "Enter the book's author: "
     author = gets.chomp
-
-    until author.strip != ''
-      puts 'Author name cannot be empty. Please enter a valid author name: '
-      author = gets.chomp
-    end
 
     book = Book.new(title, author)
     @books << book
-    puts 'Book created successfully'
-  rescue StandardError => e
-    puts "An error occurred: #{e.message}"
+
+    puts 'Book created successfully!'
   end
 
   def create_rental
-    puts 'The following are Available Books.Select a book You want to borrow from the Library'
-    list_all_books
-    book_id = select_valid_book_id
+    if @people.empty? || @books.empty?
+      puts 'No people or books available to create a rental.'
+      return
+    end
 
-    puts 'Select who is renting the book from the list'
-    list_all_people
-    person_id = select_valid_person_id
+    book = select_book_for_rental
+    if book.nil?
+      puts 'Invalid book index.'
+      return
+    end
 
-    puts 'Enter Date (YYYY-MM-DD): '
+    puts 'Select the person for the rental:'
+    list_people
+    print 'Select a person from the following list by number (not id): '
+    person_index = gets.chomp.to_i
+
+    person = @people[person_index]
+
+    if person.nil?
+      puts 'Invalid person index.'
+      return
+    end
+
+    print 'Date (YYYY-MM-DD): '
     date = gets.chomp
 
-    until valid_date?(date)
-      puts 'Invalid date format. Please enter a valid date (YYYY-MM-DD): '
-      date = gets.chomp
+    person.add_rental(date, book)
+    @data_handler.save_rentals_to_json(@people)
+
+    puts 'Rental created successfully!'
+  end
+
+  def list_rentals_for_person
+    if @people.empty?
+      puts 'No people available to list rentals.'
+      return
     end
 
-    rental = Rental.new(date, @books[book_id], @people[person_id])
-    @rentals << rental
-    puts 'Book rented successfully'
-  rescue StandardError => e
-    puts "Error while creating rental: #{e.message}"
-  end
+    person = select_person_to_list_rentals
+    return unless person
 
-  def select_valid_book_id
-    puts 'Enter the book number: '
-    book_id = gets.chomp.to_i - 1
-    until (0..@books.length - 1).cover?(book_id)
-      puts 'Invalid book number. Please select a valid book number.'
-      puts 'Enter the book number: '
-      book_id = gets.chomp.to_i - 1
+    if person.rentals.empty?
+      puts "No rentals found for #{person.class.name}: #{person.name} (ID: #{person.id})."
+    else
+      puts "\nRentals for #{person.class.name}: #{person.name} (ID: #{person.id})"
+      list_person_rentals(person)
     end
-    book_id
-  end
-
-  def select_valid_person_id
-    puts 'Enter the person number [NOT ID BUT NUMBER FROM LIST]: '
-    person_id = gets.chomp.to_i - 1
-    until (0..@people.length - 1).cover?(person_id)
-      puts 'Invalid person number. Please select a valid person number.'
-      puts 'Enter the person number: '
-      person_id = gets.chomp.to_i - 1
-    end
-    person_id
-  end
-
-  def valid_date?(date)
-    ::Date.parse(date)
-    true
-  rescue ArgumentError
-    false
-  end
-
-  def list_all_rentals
-    puts 'Please SELECT [ID] of user from the list Below'
-    list_all_people
-    person_id = gets.chomp.to_i
-    puts 'Rentals for Person include:'
-
-    list = []
-    @rentals.each do |rental|
-      if rental.person.id == person_id
-        list << "Date: #{rental.date}, Book: '#{rental.book.title}' by #{rental.book.author}"
-      end
-    end
-    return list.each { |rental| puts rental } unless list.empty?
-
-    puts 'No record found for the selected person'
-  end
-
-
-  # ... Existing methods ...
-
-  def save_data_to_json
-    save_books_to_json
-    save_people_to_json
-    save_rentals_to_json
-  end
-
-  def load_data_from_json
-    load_books_from_json
-    load_people_from_json
-    load_rentals_from_json
   end
 
   private
 
-  # ... Existing methods ...
+  def select_book_for_rental
+    puts 'Select the book for the rental:'
+    list_books
+    print 'Select a book from the following list by number: '
+    book_index = gets.chomp.to_i
 
-  def save_books_to_json
-    File.write('books.json', JSON.generate(@books))
+    book = @books[book_index]
+
+    if book.nil?
+      puts 'Invalid book index.'
+      return nil
+    end
+
+    book
   end
 
-  def save_people_to_json
-    File.write('people.json', JSON.generate(@people))
+  def select_person_for_rental
+    puts 'Select the person for the rental:'
+    list_people
+    print 'Select a person from the following list by number (not id): '
+    person_index = gets.chomp.to_i
+
+    person = @people[person_index]
+
+    if person.nil?
+      puts 'Invalid person index.'
+      return nil
+    end
+
+    person
   end
 
-  def save_rentals_to_json
-    File.write('rentals.json', JSON.generate(@rentals))
+  def input_rental_date
+    print 'Date (YYYY-MM-DD): '
+    gets.chomp
   end
 
-  def load_books_from_json
-    @books = begin
-      JSON.parse(File.read('books.json'))
-    rescue StandardError
-      []
+  def select_person_to_list_rentals
+    puts 'Select the person ID to list rentals:'
+    list_people
+    print 'Enter the person ID: '
+    person_id = gets.chomp.to_i
+
+    person = @people.find { |p| p.id == person_id }
+
+    if person.nil?
+      puts 'Invalid person ID.'
+      return nil
+    end
+
+    person
+  end
+
+  def list_person_rentals(person)
+    person.rentals.each_with_index do |rental, index|
+      puts "#{index + 1}. #{rental.book.title}, rented on #{rental.date}"
     end
   end
 
-  def load_people_from_json
-    @people = begin
-      JSON.parse(File.read('people.json'))
-    rescue StandardError
-      []
-    end
+  def load_data_from_files
+    @books = Book.load_books_from_json
   end
 
-  def load_rentals_from_json
-    @rentals = begin
-      JSON.parse(File.read('rentals.json'))
-    rescue StandardError
-      []
-    end
+  def save_data_to_files
+    Book.save_books_to_json(@books)
+    @data_handler.save_people_to_json(@people)
+  end
+
+  public
+
+  def exit_app
+    save_data_to_files
+    @data_handler.save_rentals_to_json(@people)
+    puts 'Thank you for using this App.'
+    exit
   end
 end

@@ -1,0 +1,11 @@
+[
+  {
+    "type": "Student",
+    "age": 12,
+    "name": "derrick",
+    "parent_permission": true,
+    "classroom": [
+
+    ]
+  }
+]

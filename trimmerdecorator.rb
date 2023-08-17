@@ -1,7 +1,7 @@
 require_relative 'decorator'
 
-class CapitalizeDecorator < Decorator
+class TrimmerDecorator < Decorator
   def correct_name
-    super.capitalize
+    super[0...10]
   end
 end
